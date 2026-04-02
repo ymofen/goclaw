@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"goclaw/pkg/model"
 	"goclaw/pkg/openai"
+	"goclaw/pkg/skills"
 	"goclaw/pkg/tools"
 )
 
 func main() {
-	envText, err := os.ReadFile("config/env.json")
+	envText, err := os.ReadFile(".env")
 	if err != nil {
-		panic(fmt.Sprintf("failed to read config/env.json: %v", err))
+		panic(fmt.Sprintf("failed to read .env: %v", err))
 	}
 
 	var config openai.OpenAIConfig
@@ -46,12 +48,37 @@ func main() {
 
 	memory := model.Memory{}
 	memory.Add(model.Message{
-		Role:    "user",
-		Kind:    model.KindText,
-		Content: "请查看文件 e:/workspace/ai/goclaw/test.txt 的内容，然后在该文件末尾追加一行注释 // reviewed，最后把注释改成 // 当前时间: done。",
+		Role: "user",
+		Kind: model.KindText,
+		// Content: "将hello, docx, 写入到hello.docx文件中",
+		Content: "google当前截个图，保存为google.png",
 	})
 
+	skillmgr := skills.NewFileSkillMgr()
+	err = skillmgr.LoadSkillsFromDir("static/skills")
+	if err != nil {
+		fmt.Printf("failed to load skills: %v\n", err)
+	}
+
+	prompts := []string{
+		"You are a helpful assistant with access to file tools. Use them when the user asks about files.",
+		skillmgr.GetPrompt(),
+	}
+
+	// return
+
 	toolkit := tools.NewManager()
+
+	if err := tools.RegisterShellCommandTool(toolkit); err != nil {
+		fmt.Printf("failed to register shell command tool: %v\n", err)
+		return
+	}
+
+	if err := tools.RegisterExecutePyCode(toolkit); err != nil {
+		fmt.Printf("failed to register execute py code tool: %v\n", err)
+		return
+	}
+
 	if err := tools.RegisterFileTools(toolkit); err != nil {
 		fmt.Printf("failed to register file tools: %v\n", err)
 		return
@@ -60,7 +87,7 @@ func main() {
 	formatter := &openai.OpenAIRequestFormatter{
 		Config:  config,
 		Toolkit: toolkit,
-		Prompt:  "You are a helpful assistant with access to file tools. Use them when the user asks about files.",
+		Prompt:  strings.Join(prompts, "\n"),
 		Memory:  &memory,
 	}
 
