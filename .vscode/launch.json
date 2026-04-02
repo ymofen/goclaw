@@ -7,11 +7,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/cmd/main",
-      "cwd": "${workspaceFolder}",
-      "args": [
-        "-from=config/config-temp.json",
-        "-http-addr=:8081"
-      ]
+      "cwd": "${workspaceFolder}"
     }
   ]
 }
