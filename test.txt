@@ -1,0 +1,13 @@
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}
+// done// done
+
+// 2024-01-01 12:00:00: done// reviewed
+// 当前时间: done
+// 2024-01-15 14:30:00: done
+// 当前时间: done

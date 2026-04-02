@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Go: cmd/main (temp)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/main",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "-from=config/config-temp.json",
+        "-http-addr=:8081"
+      ]
+    }
+  ]
+}
