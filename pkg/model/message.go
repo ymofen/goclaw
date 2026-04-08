@@ -22,4 +22,5 @@ type Message struct {
 	ToolCallID    string      `json:"tool_call_id,omitempty"`
 	ToolName      string      `json:"tool_name,omitempty"`
 	ToolArguments string      `json:"tool_arguments,omitempty"`
+	Marks         []string    `json:"marks,omitempty"`
 }

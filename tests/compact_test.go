@@ -1,22 +1,31 @@
-package main
+package tests
 
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
-	"sync"
-	"time"
-
 	"goclaw/pkg/agent"
 	"goclaw/pkg/model"
 	"goclaw/pkg/openai"
-	"goclaw/pkg/skills"
 	"goclaw/pkg/tools"
+	"os"
+	"strings"
+	"sync"
+	"testing"
+	"time"
 )
 
-func main() {
-	envText, err := os.ReadFile(".env")
+func TestCompactFunction(t *testing.T) {
+	m := &model.Memory{}
+	m.Load("../log/mem.log")
+
+	toCompress, toKeep := m.SplitMessagesForCompression(3)
+
+	model.SaveMessagesToFile(toCompress, "../log/compact_to_compress.log")
+	model.SaveMessagesToFile(toKeep, "../log/compact_to_keep.log")
+
+	return
+
+	envText, err := os.ReadFile("../.env")
 	if err != nil {
 		panic(fmt.Sprintf("failed to read .env: %v", err))
 	}
@@ -26,12 +35,7 @@ func main() {
 		panic(err)
 	}
 
-	if !config.SSE {
-		config.SSE = true
-	}
-
-	// Initialize history.log for recording all interactions
-	logFile, err := os.Create("history.log")
+	logFile, err := os.Create("../log/compact_history.log")
 	if err != nil {
 		fmt.Printf("failed to create history.log: %v\n", err)
 		return
@@ -47,49 +51,20 @@ func main() {
 		logFile.Sync()
 	}
 
-	memory := model.Memory{}
-	memory.Add(model.Message{
-		Role: "user",
-		Kind: model.KindText,
-		// Content: "将hello, docx, 写入到hello.docx文件中",
-		Content: "google当前截个图，保存为google.png",
-	})
-
-	skillmgr := skills.NewFileSkillMgr()
-	err = skillmgr.LoadSkillsFromDir("static/skills")
-	if err != nil {
-		fmt.Printf("failed to load skills: %v\n", err)
+	if !config.SSE {
+		config.SSE = true
 	}
 
 	prompts := []string{
 		"You are a helpful assistant with access to file tools. Use them when the user asks about files.",
-		skillmgr.GetPrompt(),
 	}
-
-	// return
 
 	toolkit := tools.NewManager()
-
-	if err := tools.RegisterShellCommandTool(toolkit); err != nil {
-		fmt.Printf("failed to register shell command tool: %v\n", err)
-		return
-	}
-
-	if err := tools.RegisterExecutePyCode(toolkit); err != nil {
-		fmt.Printf("failed to register execute py code tool: %v\n", err)
-		return
-	}
-
-	if err := tools.RegisterFileTools(toolkit); err != nil {
-		fmt.Printf("failed to register file tools: %v\n", err)
-		return
-	}
-
 	formatter := &openai.OpenAIRequestFormatter{
 		Config:  config,
 		Toolkit: toolkit,
 		Prompt:  strings.Join(prompts, "\n"),
-		Memory:  &memory,
+		Memory:  m,
 	}
 
 	api := openai.NewOpenAIChatModel(config, model.AIModelEvent{}, formatter)
@@ -129,7 +104,7 @@ func main() {
 
 	// Initialize GoAgent with configured dependencies
 	goAgent := &agent.GoAgent{}
-	goAgent.SetMemory(&memory)
+	goAgent.SetMemory(m)
 	goAgent.SetModel(api)
 	goAgent.SetToolkit(toolkit)
 	goAgent.SetRequestFormatter(formatter)
@@ -141,7 +116,7 @@ func main() {
 		return
 	}
 
-	memory.Save("mem.log")
+	m.Save("../log/compact_mem.log")
 
 	// Print final results
 	if config.SSE {
@@ -154,13 +129,5 @@ func main() {
 			}
 		}
 	}
-}
 
-// truncate shortens s to at most n runes for display purposes.
-func truncate(s string, n int) string {
-	runes := []rune(s)
-	if len(runes) <= n {
-		return s
-	}
-	return string(runes[:n]) + "..."
 }
