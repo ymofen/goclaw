@@ -2,7 +2,6 @@ package agent
 
 import (
 	"fmt"
-	"strings"
 
 	"goclaw/pkg/model"
 	"goclaw/pkg/openai"
@@ -217,14 +216,14 @@ func (a *GoAgent) Execute() ([]model.Message, error) {
 		return nil, fmt.Errorf("toolkit is not set")
 	}
 
-	// Compress memory if CompressOption is set
-	if err := a.Compress(); err != nil {
-		return nil, fmt.Errorf("memory compression failed: %w", err)
-	}
+	// // Compress memory if CompressOption is set
+	// if err := a.Compress(); err != nil {
+	// 	return nil, fmt.Errorf("memory compression failed: %w", err)
+	// }
 
-	// Update formatter with current memory and composite prompt
-	compositePrompt := strings.Join(a.prompts, "\n")
-	a.updateFormatter(a.memory, compositePrompt)
+	// // Update formatter with current memory and composite prompt
+	// compositePrompt := strings.Join(a.prompts, "\n")
+	// a.updateFormatter(a.memory, compositePrompt)
 
 	// Call model to get response
 	choices, err := a.model.Execute()

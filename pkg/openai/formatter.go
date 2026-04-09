@@ -3,26 +3,30 @@ package openai
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 
 	"goclaw/pkg/model"
 )
 
 // OpenAIRequestFormatter formats messages as OpenAI-compatible chat payload.
 type OpenAIRequestFormatter struct {
-	Config  OpenAIConfig
-	Toolkit model.Toolkit
-	Prompt  string
-	Memory  *model.Memory
+	Config          OpenAIConfig
+	Toolkit         model.Toolkit
+	Prompt          string
+	Memory          *model.Memory
+	StructuredModel any
 }
 
 // OpenAIChatFormatter is kept as a compatibility alias.
 type OpenAIChatFormatter = OpenAIRequestFormatter
 
 type chatCompletionRequest struct {
-	Model    string          `json:"model"`
-	Messages []any           `json:"messages"`
-	Stream   bool            `json:"stream"`
-	Tools    []model.ToolDef `json:"tools,omitempty"`
+	Model          string                 `json:"model"`
+	Messages       []any                  `json:"messages"`
+	Stream         bool                   `json:"stream"`
+	Tools          []model.ToolDef        `json:"tools,omitempty"`
+	ResponseFormat map[string]interface{} `json:"response_format,omitempty"`
 }
 
 // plainMessage is a standard role+content message.
@@ -81,6 +85,18 @@ func (a *assistantMessageAccumulator) toMessage() assistantMessage {
 		msg.ToolCalls = append(msg.ToolCalls, a.toolCalls...)
 	}
 	return msg
+}
+
+func (f *OpenAIRequestFormatter) SetMemory(mem *model.Memory) {
+	f.Memory = mem
+}
+
+func (f *OpenAIRequestFormatter) SetPrompt(prompt string) {
+	f.Prompt = prompt
+}
+
+func (f *OpenAIRequestFormatter) SetStructuredModel(model any) {
+	f.StructuredModel = model
 }
 
 // GetRequest serializes formatter state into request JSON.
@@ -172,8 +188,76 @@ func (f OpenAIRequestFormatter) GetRequest() ([]byte, error) {
 		Messages: messages,
 		Stream:   f.Config.SSE,
 	}
+
+	if f.StructuredModel != nil {
+		schemaMap, err := GenerateOpenAISchema(f.StructuredModel, "summary_schema", "Conversation summary structure")
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate OpenAI schema: %w", err)
+		}
+		req.ResponseFormat = schemaMap
+	}
+
 	if f.Toolkit != nil {
 		req.Tools = f.Toolkit.Definitions()
 	}
 	return json.Marshal(req)
+}
+
+// GenerateOpenAISchema 根据任意结构体生成 OpenAI 格式的 JSON Schema
+// v: 结构体实例（或指针），name: schema 名称，desc: schema 描述
+func GenerateOpenAISchema(v interface{}, name, desc string) (map[string]interface{}, error) {
+	t := reflect.TypeOf(v)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("expected struct, got %s", t.Kind())
+	}
+
+	properties := make(map[string]interface{})
+	required := []string{}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+
+		// 获取 json tag 作为字段名
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+		fieldName := strings.Split(jsonTag, ",")[0]
+
+		// 基础属性：所有字段都是 string 类型（可扩展支持更多类型）
+		prop := map[string]interface{}{
+			"type": "string",
+		}
+		if descTag := field.Tag.Get("description"); descTag != "" {
+			prop["description"] = descTag
+		}
+		// 如果需要支持 maxLength，可在此处读取自定义 tag 并设置
+		// if max := field.Tag.Get("maxLength"); max != "" {
+		//     prop["maxLength"] = max
+		// }
+
+		properties[fieldName] = prop
+		required = append(required, fieldName)
+	}
+
+	schema := map[string]interface{}{
+		"type":                 "object",
+		"properties":           properties,
+		"required":             required,
+		"additionalProperties": false,
+	}
+
+	result := map[string]interface{}{
+		"type": "json_schema",
+		"json_schema": map[string]interface{}{
+			"name":        name,
+			"description": desc,
+			"strict":      true,
+			"schema":      schema,
+		},
+	}
+	return result, nil
 }

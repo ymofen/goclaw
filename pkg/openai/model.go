@@ -154,6 +154,7 @@ func (m *OpenAIChatModel) Execute() ([]model.Message, error) {
 		if readErr != nil {
 			return nil, readErr
 		}
+		m.OnResponseEvent("response_body", raw)
 		return nil, fmt.Errorf("request failed: %s\n%s", resp.Status, string(raw))
 	}
 

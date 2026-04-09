@@ -18,12 +18,10 @@ func TestCompactFunction(t *testing.T) {
 	m := &model.Memory{}
 	m.Load("../log/mem.log")
 
-	toCompress, toKeep := m.SplitMessagesForCompression(3)
-
+	lst := m.GetMessagesExcludingMark(model.MarkCompressed)
+	toCompress, toKeep := model.SplitMessagesForCompression(lst, 3)
 	model.SaveMessagesToFile(toCompress, "../log/compact_to_compress.log")
 	model.SaveMessagesToFile(toKeep, "../log/compact_to_keep.log")
-
-	return
 
 	envText, err := os.ReadFile("../.env")
 	if err != nil {
@@ -59,13 +57,41 @@ func TestCompactFunction(t *testing.T) {
 		"You are a helpful assistant with access to file tools. Use them when the user asks about files.",
 	}
 
+	var compression_prompt = "<system-hint>You have been working on the task described above " +
+		"but have not yet completed it. " +
+		"Now write a continuation summary that will allow you to resume " +
+		"work efficiently in a future context window where the " +
+		"conversation history will be replaced with this summary. " +
+		"Your summary should be structured, concise, and actionable." +
+		"</system-hint>"
+
+	mc := &model.Memory{}
+	mc.UpdateMessages(toCompress)
+	mc.Add(model.Message{
+		Role:    "user",
+		Content: compression_prompt,
+		Kind:    "text",
+	})
+
+	config.SSE = true
+
 	toolkit := tools.NewManager()
 	formatter := &openai.OpenAIRequestFormatter{
-		Config:  config,
-		Toolkit: toolkit,
-		Prompt:  strings.Join(prompts, "\n"),
-		Memory:  m,
+		Config:          config,
+		Toolkit:         toolkit,
+		Prompt:          strings.Join(prompts, "\n"),
+		Memory:          mc,
+		StructuredModel: agent.CompressSummarySchema{},
 	}
+
+	//formatter.SetStructuredModel(nil)
+
+	// body, err := formatter.GetRequest()
+	// if err != nil {
+	// 	fmt.Printf("failed to get request body: %v\n", err)
+	// 	return
+	// }
+	// fmt.Printf("REQUEST BODY:\n%s\n", string(body))
 
 	api := openai.NewOpenAIChatModel(config, model.AIModelEvent{}, formatter)
 
@@ -104,7 +130,7 @@ func TestCompactFunction(t *testing.T) {
 
 	// Initialize GoAgent with configured dependencies
 	goAgent := &agent.GoAgent{}
-	goAgent.SetMemory(m)
+	goAgent.SetMemory(mc)
 	goAgent.SetModel(api)
 	goAgent.SetToolkit(toolkit)
 	goAgent.SetRequestFormatter(formatter)

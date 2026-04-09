@@ -11,6 +11,8 @@ const (
 	KindToolResult MessageKind = "tool_result"
 )
 
+const MarkCompressed = "COMPRESSED"
+
 // Message is a normalized message used by the app and model layer.
 type Message struct {
 	Role          string      `json:"role"`
@@ -23,4 +25,17 @@ type Message struct {
 	ToolName      string      `json:"tool_name,omitempty"`
 	ToolArguments string      `json:"tool_arguments,omitempty"`
 	Marks         []string    `json:"marks,omitempty"`
+}
+
+// ExcludingMark returns true if the given message does not have the specified mark
+func (s *Message) ExcludingMark(excludeMark string) bool {
+	if excludeMark == "" || &s == nil {
+		return true
+	}
+	for _, mark := range s.Marks {
+		if mark == excludeMark {
+			return false
+		}
+	}
+	return true
 }

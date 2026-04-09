@@ -8,6 +8,8 @@ type AIModel interface {
 // AIModelRequestFormatter serializes request payload for model providers.
 type AIModelRequestFormatter interface {
 	GetRequest() ([]byte, error)
+	SetMemory(mem *Memory)
+	SetPrompt(prompt string)
 }
 
 // AIModelEvent stores optional model lifecycle callbacks.

@@ -44,18 +44,14 @@ func (m *Memory) Load(filePath string) error {
 	return json.Unmarshal(data, &m.List)
 }
 
-func (m *Memory) SplitMessagesForCompression(keepRecent int) (toCompress []Message, toKeep []Message) {
-	if keepRecent <= 0 || len(m.List) == 0 {
-		return []Message{}, m.SnapshotMessages()
-	}
-
-	cutIndex := len(m.List)
+func SplitMessagesForCompression(lst []Message, keepRecent int) (toCompress []Message, toKeep []Message) {
+	cutIndex := len(lst)
 	nKeep := 0
 	accumulatedToolCallIDs := make(map[string]bool)
 
 	// 从后往前遍历
-	for i := len(m.List) - 1; i >= 0; i-- {
-		msg := m.List[i]
+	for i := len(lst) - 1; i >= 0; i-- {
+		msg := lst[i]
 
 		// Python 版本: tool_result 时 add
 		if msg.Kind == "tool_result" && msg.ToolCallID != "" {
@@ -79,10 +75,10 @@ func (m *Memory) SplitMessagesForCompression(keepRecent int) (toCompress []Messa
 		}
 	}
 
-	if cutIndex < len(m.List) {
-		return m.List[:cutIndex], m.List[cutIndex:]
+	if cutIndex < len(lst) {
+		return lst[:cutIndex], lst[cutIndex:]
 	}
-	return []Message{}, m.SnapshotMessages()
+	return []Message{}, lst
 }
 
 // GetMessagesExcludingMark returns messages that don't have the specified mark
@@ -93,14 +89,7 @@ func (m *Memory) GetMessagesExcludingMark(excludeMark string) []Message {
 
 	result := []Message{}
 	for _, msg := range m.List {
-		hasMark := false
-		for _, mark := range msg.Marks {
-			if mark == excludeMark {
-				hasMark = true
-				break
-			}
-		}
-		if !hasMark {
+		if msg.ExcludingMark(excludeMark) {
 			result = append(result, msg)
 		}
 	}

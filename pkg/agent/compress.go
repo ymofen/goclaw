@@ -4,6 +4,14 @@ import (
 	"fmt"
 )
 
+type CompressSummarySchema struct {
+	TaskOverview         string `json:"task_overview" description:"The user's core request and success criteria"`
+	CurrentState         string `json:"current_state" description:"What has been completed so far"`
+	ImportantDiscoveries string `json:"important_discoveries" description:"Technical constraints or requirements uncovered"`
+	NextSteps            string `json:"next_steps" description:"Specific actions needed to complete the task"`
+	ContextToPreserve    string `json:"context_to_preserve" description:"User preferences or style requirements"`
+}
+
 // CompressOption configures message compression strategy for memory management.
 type CompressOption struct {
 	// Prompt is the compression hint sent to the model for summarization.
