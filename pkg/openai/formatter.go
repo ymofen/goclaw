@@ -105,7 +105,9 @@ func (f OpenAIRequestFormatter) GetRequest() ([]byte, error) {
 		return nil, fmt.Errorf("memory is nil")
 	}
 
-	messages := make([]any, 0, len(f.Memory.List)+1)
+	lst := f.Memory.GetMessagesExcludingMark(model.MarkCompressed)
+
+	messages := make([]any, 0, len(lst)+1)
 	if f.Prompt != "" {
 		messages = append(messages, plainMessage{
 			Role:    "system",
@@ -122,7 +124,7 @@ func (f OpenAIRequestFormatter) GetRequest() ([]byte, error) {
 		assistantAcc = &assistantMessageAccumulator{}
 	}
 
-	for _, msg := range f.Memory.List {
+	for _, msg := range lst {
 		switch msg.Kind {
 		case model.KindStop:
 			// stop markers are internal only

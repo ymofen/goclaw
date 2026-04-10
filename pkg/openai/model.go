@@ -113,6 +113,16 @@ type streamChunk struct {
 	} `json:"choices"`
 }
 
+// apiErrorResponse represents API error in SSE stream
+type apiErrorResponse struct {
+	Error struct {
+		Code    string      `json:"code"`
+		Message string      `json:"message"`
+		Type    string      `json:"type"`
+		Param   interface{} `json:"param"`
+	} `json:"error"`
+}
+
 // Execute sends request and returns normalized messages in received order.
 func (m *OpenAIChatModel) Execute() ([]model.Message, error) {
 	if m.Formatter == nil {
@@ -215,8 +225,17 @@ func (m *OpenAIChatModel) executeSSE(body io.Reader) ([]model.Message, error) {
 			return nil
 		}
 
+		// 先检查是否为 API 错误响应（可能同时有 id 和 error 字段）
+		var apiErr apiErrorResponse
+		if err := json.Unmarshal(payload, &apiErr); err == nil && apiErr.Error.Code != "" {
+			// 这是一个 API 错误，返回格式化的错误
+			return fmt.Errorf("API error [%s]: %s (type: %s)", apiErr.Error.Code, apiErr.Error.Message, apiErr.Error.Type)
+		}
+
+		// 否则按正常的 SSE 数据块解析
 		var chunk streamChunk
 		if err := json.Unmarshal(payload, &chunk); err != nil {
+			// 既不是错误响应也无法解析为数据块，忽略并继续
 			return nil
 		}
 		if chunk.ID != "" {

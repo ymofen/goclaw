@@ -16,16 +16,22 @@ import (
 
 func TestCompactFunction(t *testing.T) {
 	m := &model.Memory{}
-	m.Load("../log/mem.log")
+	// m.Load("../log/mem.log")
+	m.Load("../log/mem_z.log")
 
 	lst := m.GetMessagesExcludingMark(model.MarkCompressed)
-	toCompress, toKeep := model.SplitMessagesForCompression(lst, 3)
+	toCompress, toCompressIds, toKeep := model.SplitMessagesForCompression(lst, 0)
 	model.SaveMessagesToFile(toCompress, "../log/compact_to_compress.log")
 	model.SaveMessagesToFile(toKeep, "../log/compact_to_keep.log")
 
 	envText, err := os.ReadFile("../.env")
 	if err != nil {
 		panic(fmt.Sprintf("failed to read .env: %v", err))
+	}
+
+	if len(toCompress) == 0 {
+		fmt.Printf("nothing need compress")
+		return
 	}
 
 	var config openai.OpenAIConfig
@@ -49,12 +55,8 @@ func TestCompactFunction(t *testing.T) {
 		logFile.Sync()
 	}
 
-	if !config.SSE {
-		config.SSE = true
-	}
-
 	prompts := []string{
-		"You are a helpful assistant with access to file tools. Use them when the user asks about files.",
+		"You're a helpful assistant. Summarize the conversation so far in a way that will allow you to resume work efficiently in a future context window where the conversation history will be replaced with this summary.",
 	}
 
 	var compression_prompt = "<system-hint>You have been working on the task described above " +
@@ -62,7 +64,7 @@ func TestCompactFunction(t *testing.T) {
 		"Now write a continuation summary that will allow you to resume " +
 		"work efficiently in a future context window where the " +
 		"conversation history will be replaced with this summary. " +
-		"Your summary should be structured, concise, and actionable." +
+		"The summary is returned in text format, including fields: task_overview, current_state, important_discoveries, next_steps, context_to_preserve." +
 		"</system-hint>"
 
 	mc := &model.Memory{}
@@ -77,11 +79,11 @@ func TestCompactFunction(t *testing.T) {
 
 	toolkit := tools.NewManager()
 	formatter := &openai.OpenAIRequestFormatter{
-		Config:          config,
-		Toolkit:         toolkit,
-		Prompt:          strings.Join(prompts, "\n"),
-		Memory:          mc,
-		StructuredModel: agent.CompressSummarySchema{},
+		Config:  config,
+		Toolkit: toolkit,
+		Prompt:  strings.Join(prompts, "\n"),
+		Memory:  mc,
+		// StructuredModel: agent.CompressSummarySchema{},
 	}
 
 	//formatter.SetStructuredModel(nil)
@@ -103,7 +105,6 @@ func TestCompactFunction(t *testing.T) {
 	api.SetOnResponseEvent(func(eventType string, data []byte) {
 		writeHistory(fmt.Sprintf("RESPONSE [%s]: %s", eventType, string(data)))
 	})
-
 	var preKind model.MessageKind = ""
 	api.SetOnSSEReply(func(msg model.Message) {
 		switch msg.Kind {
@@ -142,17 +143,17 @@ func TestCompactFunction(t *testing.T) {
 		return
 	}
 
+	// 第一个是结果， 最后一个是停止
+	content := choices[0].Content
+	m.UpdateCompressed(content)
+	m.UpdateMessagesMark(toCompressIds, model.MarkCompressed)
+
 	m.Save("../log/compact_mem.log")
 
-	// Print final results
-	if config.SSE {
-		fmt.Println()
-	} else {
-		// Non-SSE: print text choices
-		for _, msg := range choices {
-			if msg.Kind == model.KindText && msg.Content != "" {
-				fmt.Println(msg.Content)
-			}
+	// Non-SSE: print text choices
+	for _, msg := range choices {
+		if msg.Kind == model.KindText && msg.Content != "" {
+			fmt.Println(msg.Content)
 		}
 	}
 

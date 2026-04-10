@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"goclaw/pkg/model"
-	"goclaw/pkg/openai"
 )
 
 // GoAgent implements the agentic loop with message memory, model execution, and tool integration.
@@ -238,12 +237,6 @@ func (a *GoAgent) Execute() ([]model.Message, error) {
 // updateFormatter updates the formatter's memory and prompt.
 // Currently supports OpenAIChatFormatter via type assertion.
 func (a *GoAgent) updateFormatter(mem *model.Memory, prompt string) {
-	// Try to update as OpenAIChatFormatter
-	if formatter, ok := a.formatter.(*openai.OpenAIRequestFormatter); ok {
-		formatter.Memory = mem
-		formatter.Prompt = prompt
-		return
-	}
 	// Silence other types; they may manage their own state
 }
 

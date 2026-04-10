@@ -8,6 +8,22 @@
       "mode": "auto",
       "program": "${workspaceFolder}/cmd/main",
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Go: cmd/openai",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/openai",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Go: cmd/openaihttp",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/openaihttp",
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

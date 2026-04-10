@@ -18,7 +18,7 @@ type Message struct {
 	Role          string      `json:"role"`
 	Kind          MessageKind `json:"kind"`
 	Content       string      `json:"content"`
-	ID            string      `json:"id,omitempty"`
+	ID            string      `json:"id,omitempty"` // 可能会重复
 	Created       int64       `json:"created,omitempty"`
 	Model         string      `json:"model,omitempty"`
 	ToolCallID    string      `json:"tool_call_id,omitempty"`
@@ -37,5 +37,17 @@ func (s *Message) ExcludingMark(excludeMark string) bool {
 			return false
 		}
 	}
+	return true
+}
+
+// AddMark adds the given mark to the message if it does not already exist.
+// It returns true if the mark was added, or false if the mark already existed.
+func (s *Message) AddMark(addMark string) bool {
+	for _, mark := range s.Marks {
+		if mark == addMark {
+			return false
+		}
+	}
+	s.Marks = append(s.Marks, addMark)
 	return true
 }

@@ -30,6 +30,8 @@ func main() {
 		config.SSE = true
 	}
 
+	config.SSE = false
+
 	// Initialize history.log for recording all interactions
 	logFile, err := os.Create("history.log")
 	if err != nil {
@@ -52,7 +54,7 @@ func main() {
 		Role: "user",
 		Kind: model.KindText,
 		// Content: "将hello, docx, 写入到hello.docx文件中",
-		Content: "google当前截个图，保存为google.png",
+		Content: "今天美伊战争怎么样, 搜索引擎用Bing",
 	})
 
 	skillmgr := skills.NewFileSkillMgr()
