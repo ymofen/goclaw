@@ -112,3 +112,4 @@
 109	{"choices":[{"delta":{"content":"吗？","reasoning_content":null},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1775006010,"system_fingerprint":null,"model":"kimi-k2-thinking","id":"chatcmpl-8b76c045-b187-9c46-bf27-787b8a6a35d7"}
 110	{"choices":[{"finish_reason":"stop","delta":{"content":"","reasoning_content":null},"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1775006010,"system_fingerprint":null,"model":"kimi-k2-thinking","id":"chatcmpl-8b76c045-b187-9c46-bf27-787b8a6a35d7"}
 ```
+
