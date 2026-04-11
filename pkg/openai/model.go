@@ -208,6 +208,12 @@ func appendOrMergeSSEMessage(messages []model.Message, msg model.Message) []mode
 	return append(messages, msg)
 }
 
+func (m *OpenAIChatModel) mergeToolCallsMessage(messages []model.Message) []model.Message {
+	// toolAccs := map[int]*toolCallAcc{}
+	// toolMessageIndex := map[int]int{}
+	return messages
+}
+
 func (m *OpenAIChatModel) executeSSE(body io.Reader) ([]model.Message, error) {
 	messages := make([]model.Message, 0, 16)
 	lastChunkID := ""

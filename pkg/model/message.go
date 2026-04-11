@@ -18,7 +18,7 @@ type Message struct {
 	Role          string      `json:"role"`
 	Kind          MessageKind `json:"kind"`
 	Content       string      `json:"content"`
-	ID            string      `json:"id,omitempty"` // 可能会重复
+	ID            string      `json:"id,omitempty"` // 同一组消息一致
 	Created       int64       `json:"created,omitempty"`
 	Model         string      `json:"model,omitempty"`
 	ToolCallID    string      `json:"tool_call_id,omitempty"`
@@ -29,7 +29,7 @@ type Message struct {
 
 // ExcludingMark returns true if the given message does not have the specified mark
 func (s *Message) ExcludingMark(excludeMark string) bool {
-	if excludeMark == "" || &s == nil {
+	if excludeMark == "" || s == nil {
 		return true
 	}
 	for _, mark := range s.Marks {
