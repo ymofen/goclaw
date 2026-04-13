@@ -17,17 +17,24 @@ func TestSSEStreamProcessor(t *testing.T) {
 	chunk2 := mustChunk(t, `{"id":"chat-1","created":1,"model":"demo","choices":[{"delta":{},"finish_reason":"tool_calls"}]}`)
 
 	processor.AddChunk(chunk1)
-	processor.AddChunk(chunk2)
 
-	if len(events) != 1 {
+	if len(events) != 3 {
 		t.Fatalf("unexpected SSE event count: %d", len(events))
 	}
 	if events[0].Kind != model.KindReasoning || events[0].Content != "think" {
 		t.Fatalf("unexpected first event: %+v", events[0])
 	}
-	if !events[0].DoneFlag {
-		t.Fatalf("reasoning event should be marked done when the kind changes: %+v", events[0])
+	if events[0].Step != model.SSEStepStart {
+		t.Fatalf("reasoning event should be start-only when it begins: %+v", events[0])
 	}
+	if events[1].Kind != model.KindReasoning || events[1].Content != "" || events[1].Step != model.SSEStepEnd {
+		t.Fatalf("unexpected reasoning end marker: %+v", events[1])
+	}
+	if events[2].Kind != model.KindText || events[2].Content != "hello" || events[2].Step != model.SSEStepStart {
+		t.Fatalf("unexpected text start event: %+v", events[2])
+	}
+
+	processor.AddChunk(chunk2)
 
 	messages, finishReason := processor.BuildMessages()
 	if finishReason != "tool_calls" {
@@ -42,17 +49,14 @@ func TestSSEStreamProcessor(t *testing.T) {
 	if messages[len(messages)-1].Content != "tool_calls" {
 		t.Fatalf("unexpected stop content: %q", messages[len(messages)-1].Content)
 	}
-	if len(events) != 3 {
+	if len(events) != 5 {
 		t.Fatalf("unexpected event count after finalize: %d", len(events))
 	}
-	if events[1].Kind != model.KindText || events[1].Content != "hello" || !events[1].DoneFlag {
-		t.Fatalf("unexpected text completion event: %+v", events[1])
+	if events[3].Kind != model.KindText || events[3].Content != "" || events[3].Step != model.SSEStepEnd {
+		t.Fatalf("unexpected text end marker: %+v", events[3])
 	}
-	if len(events) != 3 {
-		t.Fatalf("unexpected event count after finalize: %d", len(events))
-	}
-	if events[2].Kind != model.KindStop || events[2].Content != "tool_calls" || !events[2].DoneFlag {
-		t.Fatalf("unexpected stop event: %+v", events[2])
+	if events[4].Kind != model.KindStop || events[4].Content != "tool_calls" || events[4].Step != model.SSEStepStart|model.SSEStepEnd {
+		t.Fatalf("unexpected stop event: %+v", events[4])
 	}
 }
 

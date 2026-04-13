@@ -14,10 +14,15 @@ type AIModelRequestFormatter interface {
 
 // SSEMessage is the lightweight streaming payload used by SSE callbacks.
 type SSEMessage struct {
-	Kind     MessageKind
-	Content  string
-	DoneFlag bool
+	Kind    MessageKind
+	Content string
+	Step    uint8
 }
+
+const (
+	SSEStepStart uint8 = 1 << iota
+	SSEStepEnd
+)
 
 // AIModelEvent stores optional model lifecycle callbacks.
 type AIModelEvent struct {

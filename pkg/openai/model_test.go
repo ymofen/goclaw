@@ -22,10 +22,15 @@ func TestSSEParse(t *testing.T) {
 	defer file.Close()
 
 	processor := NewSSEStreamProcessor(func(msg model.SSEMessage) {
+		if msg.Step&model.SSEStepStart != 0 {
+			fmt.Printf("=== Event Start: %s ===\n", msg.Kind)
+		}
 		if len(msg.Content) > 0 {
 			fmt.Printf("%s", msg.Content)
+		} else if msg.Kind == model.KindToolCall {
+			fmt.Printf(".")
 		}
-		if msg.DoneFlag {
+		if msg.Step&model.SSEStepEnd != 0 {
 			fmt.Printf("\n=== Event Done: %s ===\n", msg.Kind)
 		}
 		time.Sleep(time.Millisecond * 100)
