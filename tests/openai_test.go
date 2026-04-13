@@ -130,7 +130,7 @@ func TestOpenAIThinking(t *testing.T) {
 		memory.Save(memFile)
 	}()
 
-	choices, err := api.Execute()
+	choices, err := api.Execute(&memory)
 	if err != nil {
 		fmt.Printf("execute failed: %v\n", err)
 		return

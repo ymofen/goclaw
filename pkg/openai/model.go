@@ -241,11 +241,17 @@ func buildMessagesFromChunks(chunks []streamChunk, messages []model.Message) ([]
 	return messages, finishReason
 }
 
+func (m *OpenAIChatModel) SetRequestFormatter(formatter model.AIModelRequestFormatter) {
+	m.Formatter = formatter
+}
+
 // Execute sends request and returns normalized messages in received order.
-func (m *OpenAIChatModel) Execute() ([]model.Message, error) {
+func (m *OpenAIChatModel) Execute(mem *model.Memory) ([]model.Message, error) {
 	if m.Formatter == nil {
 		return nil, fmt.Errorf("formatter is nil")
 	}
+
+	m.Formatter.SetMemory(mem)
 
 	body, err := m.Formatter.GetRequest()
 	if err != nil {

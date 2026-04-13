@@ -21,11 +21,23 @@ func (m *Memory) Add(msg Message) {
 	m.List = append(m.List, msg)
 }
 
+func (m *Memory) AddMessages(msgs []Message) {
+	for _, msg := range msgs {
+		m.Add(msg)
+	}
+}
+
 // SnapshotMessages returns a copy of the current list of messages in memory.
 func (m *Memory) SnapshotMessages() []Message {
 	cloned := make([]Message, len(m.List))
 	copy(cloned, m.List)
 	return cloned
+}
+
+func (m *Memory) ResetMarks(mark string) {
+	for i := range m.List {
+		m.List[i].Marks = nil
+	}
 }
 
 // UpdateMessages replaces the current list of messages in memory with the provided list.
@@ -74,7 +86,7 @@ func (m *Memory) GetMessagesExcludingMark(excludeMark string) []Message {
 	result := []Message{}
 	if len(m.Compressed) > 0 {
 		result = append(result,
-			Message{Role: "user",
+			Message{Role: "system",
 				Content: m.Compressed,
 				Kind:    KindText,
 			})
@@ -122,53 +134,95 @@ func LoadMessagesFromFile(filePath string) ([]Message, error) {
 	return lst, nil
 }
 
+// 先对消息进行分组，id相同分到一组，tool_call 和 tool_result 视为一组
+// 然后再按分组结果保留最近 keepRecent 组
 func SplitMessagesForCompression(lst []Message, keepRecent int) (toCompress []Message, compressIDs []string, toKeep []Message) {
-	cutIndex := len(lst)
+	if len(lst) == 0 {
+		return nil, nil, nil
+	}
 
-	if keepRecent > 0 {
-		nKeep := 0
-		accumulatedToolCallIDs := make(map[string]bool)
-		// 从后往前遍历
-		for i := len(lst) - 1; i >= 0; i-- {
-			msg := lst[i]
+	type messageGroup struct {
+		messages []Message
+	}
 
-			// Python 版本: tool_result 时 add
-			if msg.Kind == "tool_result" && msg.ToolCallID != "" {
-				accumulatedToolCallIDs[msg.ToolCallID] = true
-			}
+	groups := make([]messageGroup, 0, len(lst))
+	currentGroup := messageGroup{messages: make([]Message, 0, 4)}
+	groupIDs := make(map[string]struct{})
+	groupToolCallIDs := make(map[string]struct{})
 
-			// Python 版本: tool_use 时 remove
-			if msg.Kind == "tool_call" && msg.ToolCallID != "" {
-				if accumulatedToolCallIDs[msg.ToolCallID] {
-					delete(accumulatedToolCallIDs, msg.ToolCallID)
-				}
-			}
+	flushGroup := func() {
+		if len(currentGroup.messages) == 0 {
+			return
+		}
+		groups = append(groups, currentGroup)
+		currentGroup = messageGroup{messages: make([]Message, 0, 4)}
+		groupIDs = make(map[string]struct{})
+		groupToolCallIDs = make(map[string]struct{})
+	}
 
-			// 当没有未配对的 tool_call 时，计数加1
-			if len(accumulatedToolCallIDs) == 0 {
-				nKeep++
-				if nKeep >= keepRecent {
-					cutIndex = i
-					break
-				}
+	canJoinCurrentGroup := func(msg Message) bool {
+		if len(currentGroup.messages) == 0 {
+			return true
+		}
+
+		if msg.ID != "" {
+			if _, ok := groupIDs[msg.ID]; ok {
+				return true
 			}
 		}
 
-	}
-
-	if cutIndex <= len(lst) {
-		var chk map[string]struct{} = make(map[string]struct{})
-		toCompress = lst[:cutIndex]
-		for j := 0; j < len(toCompress); j++ {
-			if _, ok := chk[toCompress[j].ID]; ok {
-				continue
-			}
-			chk[toCompress[j].ID] = struct{}{}
-			if len(toCompress[j].ID) > 0 {
-				compressIDs = append(compressIDs, toCompress[j].ID)
+		if msg.Kind == KindToolResult && msg.ToolCallID != "" {
+			if _, ok := groupToolCallIDs[msg.ToolCallID]; ok {
+				return true
 			}
 		}
-		return toCompress, compressIDs, lst[cutIndex:]
+
+		return false
 	}
-	return []Message{}, compressIDs, lst
+
+	for _, msg := range lst {
+		if !canJoinCurrentGroup(msg) {
+			flushGroup()
+		}
+
+		currentGroup.messages = append(currentGroup.messages, msg)
+		if msg.ID != "" {
+			groupIDs[msg.ID] = struct{}{}
+		}
+		if msg.Kind == KindToolCall && msg.ToolCallID != "" {
+			groupToolCallIDs[msg.ToolCallID] = struct{}{}
+		}
+	}
+	flushGroup()
+
+	if keepRecent < 0 {
+		keepRecent = 0
+	}
+	if keepRecent > len(groups) {
+		keepRecent = len(groups)
+	}
+
+	splitIndex := len(groups) - keepRecent
+	seenIDs := make(map[string]struct{})
+
+	for idx, group := range groups {
+		if idx < splitIndex {
+			toCompress = append(toCompress, group.messages...)
+			for _, msg := range group.messages {
+				if msg.ID == "" {
+					continue
+				}
+				if _, ok := seenIDs[msg.ID]; ok {
+					continue
+				}
+				seenIDs[msg.ID] = struct{}{}
+				compressIDs = append(compressIDs, msg.ID)
+			}
+			continue
+		}
+
+		toKeep = append(toKeep, group.messages...)
+	}
+
+	return toCompress, compressIDs, toKeep
 }

@@ -30,7 +30,7 @@ func main() {
 		config.SSE = true
 	}
 
-	config.SSE = false
+	//config.SSE = true
 
 	// Initialize history.log for recording all interactions
 	logFile, err := os.Create("history.log")
@@ -105,23 +105,17 @@ func main() {
 		writeHistory(fmt.Sprintf("RESPONSE [%s]: %s", eventType, string(data)))
 	})
 
-	var preKind model.MessageKind = ""
 	api.SetOnSSEReply(func(msg model.SSEMessage) {
-		switch msg.Kind {
-		case model.KindReasoning, model.KindText:
-			if msg.Content != "" {
-				if preKind != msg.Kind {
-					if preKind != "" {
-						fmt.Println()
-					}
-					fmt.Printf("[%s]\n", msg.Kind)
-					preKind = msg.Kind
-				}
-				fmt.Print(msg.Content)
-			}
-		case model.KindStop:
-			// Reset SSE output state for next round.
-			preKind = ""
+		if msg.Step&model.SSEStepStart != 0 {
+			fmt.Printf("=== Event Start: %s ===\n", msg.Kind)
+		}
+		if len(msg.Content) > 0 {
+			fmt.Printf("%s", msg.Content)
+		} else if msg.Kind == model.KindToolCall {
+			fmt.Printf(".")
+		}
+		if msg.Step&model.SSEStepEnd != 0 {
+			fmt.Printf("\n=== Event Done: %s ===\n", msg.Kind)
 		}
 	})
 
@@ -135,6 +129,7 @@ func main() {
 	// Execute the agentic loop
 	choices, err := goAgent.Execute()
 	if err != nil {
+		memory.Save("mem.log")
 		fmt.Printf("agent execution failed: %v\n", err)
 		return
 	}

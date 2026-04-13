@@ -2,7 +2,8 @@ package model
 
 // AIModel defines a chat model that can execute one round and return normalized messages.
 type AIModel interface {
-	Execute() ([]Message, error)
+	Execute(mem *Memory) ([]Message, error)
+	SetRequestFormatter(formatter AIModelRequestFormatter)
 }
 
 // AIModelRequestFormatter serializes request payload for model providers.
