@@ -112,7 +112,7 @@ func TestOpenAIThinking(t *testing.T) {
 		writeHistory(fmt.Sprintf("RESPONSE [%s]: %s", eventType, string(data)))
 	})
 
-	api.SetOnSSEReply(func(msg model.Message) {
+	api.SetOnSSEReply(func(msg model.SSEMessage) {
 		switch msg.Kind {
 		case model.KindReasoning, model.KindText:
 			if msg.Content != "" {
@@ -125,9 +125,6 @@ func TestOpenAIThinking(t *testing.T) {
 				}
 				fmt.Print(msg.Content)
 			}
-		case model.KindToolCall:
-			fmt.Printf("\n[tool_call] %s(%s)\n", msg.ToolName, msg.ToolArguments)
-			preKind = msg.Kind
 		case model.KindStop:
 			// Reset SSE output state for next round.
 			preKind = ""

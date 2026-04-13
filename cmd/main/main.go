@@ -106,7 +106,7 @@ func main() {
 	})
 
 	var preKind model.MessageKind = ""
-	api.SetOnSSEReply(func(msg model.Message) {
+	api.SetOnSSEReply(func(msg model.SSEMessage) {
 		switch msg.Kind {
 		case model.KindReasoning, model.KindText:
 			if msg.Content != "" {
@@ -119,10 +119,6 @@ func main() {
 				}
 				fmt.Print(msg.Content)
 			}
-		case model.KindToolCall:
-			fmt.Printf("\n[tool_call] %s(%s)\n", msg.ToolName, msg.ToolArguments)
-			writeHistory(fmt.Sprintf("MESSAGE [tool_call] %s(%s)", msg.ToolName, msg.ToolArguments))
-			preKind = msg.Kind
 		case model.KindStop:
 			// Reset SSE output state for next round.
 			preKind = ""

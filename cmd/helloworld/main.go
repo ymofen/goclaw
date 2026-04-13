@@ -34,12 +34,14 @@ func main() {
 		Memory: &memory,
 	}
 	api := openai.NewOpenAIChatModel(config, model.AIModelEvent{}, formatter)
-	api.SetOnSSEReply(func(msg model.Message) {
+	api.SetOnSSEReply(func(msg model.SSEMessage) {
 		switch msg.Kind {
 		case model.KindReasoning, model.KindText:
 			if msg.Content != "" {
 				fmt.Print(msg.Content)
 			}
+		case model.KindStop:
+			// no-op
 		}
 	})
 

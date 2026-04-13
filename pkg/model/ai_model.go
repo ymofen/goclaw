@@ -12,9 +12,16 @@ type AIModelRequestFormatter interface {
 	SetPrompt(prompt string)
 }
 
+// SSEMessage is the lightweight streaming payload used by SSE callbacks.
+type SSEMessage struct {
+	Kind     MessageKind
+	Content  string
+	DoneFlag bool
+}
+
 // AIModelEvent stores optional model lifecycle callbacks.
 type AIModelEvent struct {
-	OnSSEReplyHandler func(msg Message)
+	OnSSEReplyHandler func(msg SSEMessage)
 	OnRequestEvent    func(body []byte)
 	OnResponse        func(eventType string, data []byte)
 }
