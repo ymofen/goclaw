@@ -103,7 +103,6 @@ func TestOpenAIThinking(t *testing.T) {
 	}
 
 	api := openai.NewOpenAIChatModel(config, model.AIModelEvent{}, formatter)
-	var preKind model.MessageKind = ""
 	api.SetOnRequestEvent(func(body []byte) {
 		writeHistory(fmt.Sprintf("REQUEST: %s", string(body)))
 	})
@@ -113,21 +112,16 @@ func TestOpenAIThinking(t *testing.T) {
 	})
 
 	api.SetOnSSEReply(func(msg model.SSEMessage) {
-		switch msg.Kind {
-		case model.KindReasoning, model.KindText:
-			if msg.Content != "" {
-				if preKind != msg.Kind {
-					if preKind != "" {
-						fmt.Println()
-					}
-					fmt.Printf("[%s]\n", msg.Kind)
-					preKind = msg.Kind
-				}
-				fmt.Print(msg.Content)
-			}
-		case model.KindStop:
-			// Reset SSE output state for next round.
-			preKind = ""
+		if msg.Step&model.SSEStepStart != 0 {
+			fmt.Printf("=== Event Start: %s ===\n", msg.Kind)
+		}
+		if len(msg.Content) > 0 {
+			fmt.Printf("%s", msg.Content)
+		} else if msg.Kind == model.KindToolCall {
+			fmt.Printf(".")
+		}
+		if msg.Step&model.SSEStepEnd != 0 {
+			fmt.Printf("\n=== Event Done: %s ===\n", msg.Kind)
 		}
 	})
 

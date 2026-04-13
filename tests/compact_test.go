@@ -20,9 +20,11 @@ func TestCompactFunction(t *testing.T) {
 	m.Load("../log/mem_z.log")
 
 	lst := m.GetMessagesExcludingMark(model.MarkCompressed)
-	toCompress, toCompressIds, toKeep := model.SplitMessagesForCompression(lst, 0)
+	toCompress, toCompressIds, toKeep := model.SplitMessagesForCompression(lst, 3)
 	model.SaveMessagesToFile(toCompress, "../log/compact_to_compress.log")
 	model.SaveMessagesToFile(toKeep, "../log/compact_to_keep.log")
+
+	return
 
 	envText, err := os.ReadFile("../.env")
 	if err != nil {
@@ -105,23 +107,17 @@ func TestCompactFunction(t *testing.T) {
 	api.SetOnResponseEvent(func(eventType string, data []byte) {
 		writeHistory(fmt.Sprintf("RESPONSE [%s]: %s", eventType, string(data)))
 	})
-	var preKind model.MessageKind = ""
 	api.SetOnSSEReply(func(msg model.SSEMessage) {
-		switch msg.Kind {
-		case model.KindReasoning, model.KindText:
-			if msg.Content != "" {
-				if preKind != msg.Kind {
-					if preKind != "" {
-						fmt.Println()
-					}
-					fmt.Printf("[%s]\n", msg.Kind)
-					preKind = msg.Kind
-				}
-				fmt.Print(msg.Content)
-			}
-		case model.KindStop:
-			// Reset SSE output state for next round.
-			preKind = ""
+		if msg.Step&model.SSEStepStart != 0 {
+			fmt.Printf("=== Event Start: %s ===\n", msg.Kind)
+		}
+		if len(msg.Content) > 0 {
+			fmt.Printf("%s", msg.Content)
+		} else if msg.Kind == model.KindToolCall {
+			fmt.Printf(".")
+		}
+		if msg.Step&model.SSEStepEnd != 0 {
+			fmt.Printf("\n=== Event Done: %s ===\n", msg.Kind)
 		}
 	})
 
