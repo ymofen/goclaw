@@ -1,0 +1,43 @@
+{
+  "list":
+  [
+    {
+      "role": "user",
+      "kind": "text",
+      "content": "google当前截个图，保存为google.png"
+    },
+    {
+      "role": "assistant",
+      "kind": "reasoning",
+      "content": "用户想要截取Google当前的屏幕截图并保存为google.png。这需要执行shell命令来使用截图工具。\n\n在Linux系统中，可以使用多种截图工具：\n1. `scrot` - 命令行截图工具\n2. `gnome-screenshot` - GNOME桌面环境的截图工具\n3. `import` - ImageMagick的一部分\n\n首先，我需要检查是否安装了这些工具，然后执行截图命令。\n\n让我先检查系统上是否有可用的截图工具。",
+      "id": "chatcmpl-c6f15aaf-202d-908d-bee3-1a3015d5ab14",
+      "created": 1775548312,
+      "model": "kimi-k2-thinking"
+    },
+    {
+      "role": "assistant",
+      "kind": "text",
+      "content": "我来帮你截取屏幕截图。首先检查一下系统上可用的截图工具。",
+      "id": "chatcmpl-c6f15aaf-202d-908d-bee3-1a3015d5ab14",
+      "created": 1775548312,
+      "model": "kimi-k2-thinking"
+    },
+    {
+      "role": "assistant",
+      "kind": "tool_call",
+      "content": "",
+      "id": "chatcmpl-c6f15aaf-202d-908d-bee3-1a3015d5ab14",
+      "created": 1775548312,
+      "model": "kimi-k2-thinking",
+      "tool_call_id": "functions.shell_command:0",
+      "tool_name": "shell_command",
+      "tool_arguments": "{\"command\": \"which scrot gnome-screenshot import\"}"
+    },
+    {
+      "role": "tool",
+      "kind": "tool_result",
+      "content": "\u003creturncode\u003e1\u003c/returncode\u003e\u003cstdout\u003e\u003c/stdout\u003e\u003cstderr\u003e/usr/bin/which: no scrot in (/d/sdk/go1.24.7.windows-amd64/bin:/d/ide/VSCode:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0:/c/Windows/System32/OpenSSH:/cmd:/c/Program Files/TortoiseGit/bin:/c/Program Files/Graphviz/bin:/c/ProgramData/chocolatey/bin:/c/Users/Y1855/go/bin:/e/ide/jdk-7u80/bin:/d/tools/sys/gzip-1.3.12-1-bin/bin:/c/Users/Y1855/AppData/Roaming/nvm:/c/Program Files/nodejs:/usr/bin:/c/Program Files/CMake/bin:/d/opencv/build/install/xktlib:/d/Program Files/TortoiseSVN/bin:/d/ide/VSCode/bin:/c/Users/Y1855/.local/bin:/c/Users/Y1855/AppData/Local/Programs/Python/Python312/Scripts:/c/Users/Y1855/AppData/Local/Programs/Python/Python312:/c/Users/Y1855/AppData/Local/Programs/Python/Launcher:/c/Users/Y1855/AppData/Local/Microsoft/WindowsApps:/c/windows/system32:/c/Users/Y1855/AppData/Roaming/npm:/c/Users/Y1855/AppData/Roaming/nvm:/c/Program Files/nodejs:/e/workspace/gnssbin:/d/sdk/mingw64/bin:/d/Programs/Antigravity/bin:/d/Go/bin:/c/Users/Y1855/AppData/Local/Microsoft/WinGet/Links)\n/usr/bin/which: no gnome-screenshot in (/d/sdk/go1.24.7.windows-amd64/bin:/d/ide/VSCode:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0:/c/Windows/System32/OpenSSH:/cmd:/c/Program Files/TortoiseGit/bin:/c/Program Files/Graphviz/bin:/c/ProgramData/chocolatey/bin:/c/Users/Y1855/go/bin:/e/ide/jdk-7u80/bin:/d/tools/sys/gzip-1.3.12-1-bin/bin:/c/Users/Y1855/AppData/Roaming/nvm:/c/Program Files/nodejs:/usr/bin:/c/Program Files/CMake/bin:/d/opencv/build/install/xktlib:/d/Program Files/TortoiseSVN/bin:/d/ide/VSCode/bin:/c/Users/Y1855/.local/bin:/c/Users/Y1855/AppData/Local/Programs/Python/Python312/Scripts:/c/Users/Y1855/AppData/Local/Programs/Python/Python312:/c/Users/Y1855/AppData/Local/Programs/Python/Launcher:/c/Users/Y1855/AppData/Local/Microsoft/WindowsApps:/c/windows/system32:/c/Users/Y1855/AppData/Roaming/npm:/c/Users/Y1855/AppData/Roaming/nvm:/c/Program Files/nodejs:/e/workspace/gnssbin:/d/sdk/mingw64/bin:/d/Programs/Antigravity/bin:/d/Go/bin:/c/Users/Y1855/AppData/Local/Microsoft/WinGet/Links)\n/usr/bin/which: no import in (/d/sdk/go1.24.7.windows-amd64/bin:/d/ide/VSCode:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0:/c/Windows/System32/OpenSSH:/cmd:/c/Program Files/TortoiseGit/bin:/c/Program Files/Graphviz/bin:/c/ProgramData/chocolatey/bin:/c/Users/Y1855/go/bin:/e/ide/jdk-7u80/bin:/d/tools/sys/gzip-1.3.12-1-bin/bin:/c/Users/Y1855/AppData/Roaming/nvm:/c/Program Files/nodejs:/usr/bin:/c/Program Files/CMake/bin:/d/opencv/build/install/xktlib:/d/Program Files/TortoiseSVN/bin:/d/ide/VSCode/bin:/c/Users/Y1855/.local/bin:/c/Users/Y1855/AppData/Local/Programs/Python/Python312/Scripts:/c/Users/Y1855/AppData/Local/Programs/Python/Python312:/c/Users/Y1855/AppData/Local/Programs/Python/Launcher:/c/Users/Y1855/AppData/Local/Microsoft/WindowsApps:/c/windows/system32:/c/Users/Y1855/AppData/Roaming/npm:/c/Users/Y1855/AppData/Roaming/nvm:/c/Program Files/nodejs:/e/workspace/gnssbin:/d/sdk/mingw64/bin:/d/Programs/Antigravity/bin:/d/Go/bin:/c/Users/Y1855/AppData/Local/Microsoft/WinGet/Links)\u003c/stderr\u003e",
+      "tool_call_id": "functions.shell_command:0"
+    }    
+  ]
+}
