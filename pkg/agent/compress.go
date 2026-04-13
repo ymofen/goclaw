@@ -45,6 +45,12 @@ type CompressOption struct {
 
 	// RequestFormatter formats the memory into a request for the compression model.
 	RequestFormatter model.AIModelRequestFormatter
+
+	// OnBeginCompress is an optional callback that is called when compression starts.
+	OnBeginCompress func(tokenNum int) bool
+
+	// OnEndCompress is an optional callback that is called when compression ends.
+	OnEndCompress func(content string)
 }
 
 // Validate checks if CompressOption is properly configured.
@@ -82,14 +88,23 @@ func CompressMemory(mem *model.Memory, compresOption *CompressOption, formatter 
 
 	formatter.SetMemory(mc)
 	formatter.SetPrompt(compresOption.Prompt)
+
+	tokenNum := 0
 	if compresOption.TokenCounter != nil {
 		body, err := formatter.GetRequest()
 		if err != nil {
 			return fmt.Errorf("failed to get compression request body: %v", err)
 		}
-		n := compresOption.TokenCounter(string(body))
-		if n < compresOption.TriggerTokens {
+		tokenNum = compresOption.TokenCounter(string(body))
+		if tokenNum < compresOption.TriggerTokens {
 			// No need to compress yet
+			return nil
+		}
+	}
+
+	if compresOption.OnBeginCompress != nil {
+		if !compresOption.OnBeginCompress(tokenNum) {
+			// Compression cancelled by callback
 			return nil
 		}
 	}
@@ -105,7 +120,11 @@ func CompressMemory(mem *model.Memory, compresOption *CompressOption, formatter 
 		content := choices[1].Content
 		mem.UpdateCompressed(content)
 		mem.UpdateMessagesMark(toCompressIds, model.MarkCompressed)
+		if compresOption.OnEndCompress != nil {
+			compresOption.OnEndCompress(content)
+		}
 		return nil
 	}
+
 	return fmt.Errorf("compression failed: no choices returned")
 }

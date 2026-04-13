@@ -19,6 +19,14 @@ type GoAgent struct {
 	maxIterations  int
 	prompts        []string
 	compressFlag   atomic.Bool
+	Infof          func(format string, args ...interface{})
+}
+
+func NewGoAgent() *GoAgent {
+	return &GoAgent{
+		maxIterations: 10,
+		Infof:         func(format string, args ...interface{}) {},
+	}
 }
 
 // SetMemory configures the memory for the agent.

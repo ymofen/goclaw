@@ -105,9 +105,14 @@ func main() {
 		writeHistory(fmt.Sprintf("RESPONSE [%s]: %s", eventType, string(data)))
 	})
 
+	goAgent := &agent.GoAgent{}
 	api.SetOnSSEReply(func(msg model.SSEMessage) {
 		if msg.Step&model.SSEStepStart != 0 {
-			fmt.Printf("=== Event Start: %s ===\n", msg.Kind)
+			if goAgent.CompressFlag() {
+				fmt.Printf("=== [Compress SSE] Event Start: %s ===\n", msg.Kind)
+			} else {
+				fmt.Printf("=== Event Start: %s ===\n", msg.Kind)
+			}
 		}
 		if len(msg.Content) > 0 {
 			fmt.Printf("%s", msg.Content)
@@ -120,11 +125,29 @@ func main() {
 	})
 
 	// Initialize GoAgent with configured dependencies
-	goAgent := &agent.GoAgent{}
+
 	goAgent.SetMemory(&memory)
 	goAgent.SetModel(api)
 	goAgent.SetToolkit(toolkit)
 	goAgent.SetRequestFormatter(formatter)
+
+	compressOpt := &agent.CompressOption{
+		Prompt:     agent.DefaultCompressionPrompt,
+		KeepRecent: 1,
+		TokenCounter: func(s string) int {
+			// Simple token counter: 1 token per 4 characters (for testing purposes)
+			return len(s) / 4
+		},
+		TriggerTokens: 1024,
+		OnBeginCompress: func(tokenNum int) bool {
+			fmt.Printf(">>> Compression triggered! Token count: %d\n", tokenNum)
+			return true
+		},
+		OnEndCompress: func(content string) {
+			fmt.Printf("Compress Done length:%d\n", len(content))
+		},
+	}
+	goAgent.SetCompressOption(compressOpt)
 
 	// Execute the agentic loop
 	choices, err := goAgent.Execute()

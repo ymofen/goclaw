@@ -84,6 +84,13 @@ func TestAgentCompact(t *testing.T) {
 			return len(s) / 4
 		},
 		TriggerTokens: 512,
+		OnBeginCompress: func(tokenNum int) bool {
+			fmt.Printf(">>> Compression triggered! Token count: %d\n", tokenNum)
+			return true
+		},
+		OnEndCompress: func(content string) {
+			fmt.Printf("Compress Done length:%d\n", len(content))
+		},
 	}
 	goAgent.SetCompressOption(compressOpt)
 
